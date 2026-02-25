@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Queens Puzzle Editor</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #1a1a2e;
+    color: #eee;
+    padding: 20px;
+    min-height: 100vh;
+  }
+
+  h1 { font-size: 1.6rem; margin-bottom: 4px; letter-spacing: 1px; }
+  .subtitle { color: #aaa; font-size: 0.85rem; margin-bottom: 20px; }
+
+  .layout {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .panel {
+    background: #222244;
+    border-radius: 10px;
+    padding: 16px;
+    min-width: 300px;
+  }
+
+  .panel h2 {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    color: #9b8ec4;
+  }
+
+  .panel h3 {
+    font-size: 0.95rem;
+    margin: 12px 0 6px;
+    color: #8888bb;
+  }
+
+  label { font-size: 0.9rem; }
+
+  input[type="number"], input[type="text"] {
+    background: #2d2d5e;
+    color: #eee;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 0.9rem;
+    width: 80px;
+  }
+
+  input[type="text"] { width: 200px; }
+
+  button {
+    background: #2d2d5e;
+    color: #eee;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  button:hover { background: #3d3d7e; }
+  button:active { background: #4d4d9e; }
+  button.primary { background: #5b4bbe; border-color: #7b68ee; }
+  button.primary:hover { background: #6b5bce; }
+
+  .btn-row {
+    display: flex;
+    gap: 8px;
+    margin: 10px 0;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .canvas-wrap {
+    position: relative;
+    display: inline-block;
+    cursor: crosshair;
+  }
+
+  canvas {
+    display: block;
+    border-radius: 4px;
+    max-width: 100%;
+  }
+
+  #image-canvas {
+    max-width: 600px;
+    max-height: 600px;
+  }
+
+  .drop-zone {
+    border: 2px dashed #555;
+    border-radius: 10px;
+    padding: 40px 20px;
+    text-align: center;
+    color: #888;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    margin-bottom: 12px;
+  }
+
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: #7b68ee;
+    background: rgba(123, 104, 238, 0.05);
+  }
+
+  .drop-zone input { display: none; }
+
+  .step-indicator {
+    display: inline-block;
+    background: #7b68ee;
+    color: #fff;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 24px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-right: 6px;
+  }
+
+  .step { margin-bottom: 16px; }
+  .step.disabled { opacity: 0.4; pointer-events: none; }
+
+  .preview-grid {
+    display: inline-grid;
+    gap: 0;
+    border: 2px solid #444;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+
+  .preview-cell {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: rgba(0,0,0,0.5);
+    cursor: pointer;
+    border: 1px solid rgba(0,0,0,0.1);
+    transition: filter 0.1s;
+  }
+
+  .preview-cell:hover { filter: brightness(1.15); }
+
+  .preview-cell.selected-for-paint {
+    box-shadow: inset 0 0 0 2px #fff;
+  }
+
+  /* Region border rendering on preview */
+  .preview-cell.border-top { border-top: 2px solid #333; }
+  .preview-cell.border-bottom { border-bottom: 2px solid #333; }
+  .preview-cell.border-left { border-left: 2px solid #333; }
+  .preview-cell.border-right { border-right: 2px solid #333; }
+
+  .color-palette {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin: 8px 0;
+  }
+
+  .color-swatch {
+    width: 30px;
+    height: 30px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: rgba(0,0,0,0.5);
+  }
+
+  .color-swatch.active { border-color: #fff; box-shadow: 0 0 8px rgba(255,255,255,0.5); }
+
+  .json-output {
+    background: #1a1a2e;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    color: #a8d5a2;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 400px;
+    overflow-y: auto;
+    margin-top: 8px;
+    user-select: all;
+  }
+
+  .status {
+    font-size: 0.85rem;
+    color: #f6c667;
+    margin: 6px 0;
+    min-height: 1.2em;
+  }
+
+  .corner-marker {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .corner-marker.tl { background: #ff4444; }
+  .corner-marker.br { background: #44ff44; }
+
+  .grid-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .info { font-size: 0.8rem; color: #888; margin: 4px 0; }
+
+  .sampled-colors {
+    display: flex;
+    gap: 3px;
+    flex-wrap: wrap;
+    margin: 6px 0;
+  }
+
+  .sampled-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+
+  .validation {
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+  }
+
+  .validation.pass { background: rgba(100, 200, 100, 0.15); color: #a8d5a2; }
+  .validation.fail { background: rgba(200, 100, 100, 0.15); color: #e88b8b; }
+</style>
+</head>
+<body>
+
+<h1>Queens Puzzle Editor</h1>
+<p class="subtitle">Extract puzzle configurations from screenshots</p>
+
+<div class="layout">
+  <!-- LEFT: Image & corner picking -->
+  <div class="panel" style="flex: 1; max-width: 650px;">
+    <div class="step" id="step1">
+      <h2><span class="step-indicator">1</span> Load Image</h2>
+      <div class="drop-zone" id="drop-zone">
+        <p>Drop a screenshot here, paste from clipboard, or click to browse</p>
+        <input type="file" id="file-input" accept="image/*">
+      </div>
+    </div>
+
+    <div class="step" id="step2">
+      <h2><span class="step-indicator">2</span> Set Grid Size &amp; Mark Corners</h2>
+      <div class="btn-row">
+        <label>Grid size: <input type="number" id="grid-size" value="8" min="3" max="15"></label>
+      </div>
+      <p class="info">Click the <strong style="color:#ff4444">top-left</strong> corner of the grid, then the <strong style="color:#44ff44">bottom-right</strong> corner.</p>
+      <div class="btn-row">
+        <button id="btn-reset-corners">Reset Corners</button>
+      </div>
+      <div class="status" id="corner-status">Waiting for top-left corner click...</div>
+    </div>
+
+    <div class="canvas-wrap" id="canvas-wrap">
+      <canvas id="image-canvas"></canvas>
+      <canvas class="grid-overlay" id="grid-overlay"></canvas>
+    </div>
+  </div>
+
+  <!-- RIGHT: Analysis & output -->
+  <div class="panel" style="flex: 1; min-width: 350px;">
+    <div class="step" id="step3">
+      <h2><span class="step-indicator">3</span> Analyze</h2>
+      <div class="btn-row">
+        <button class="primary" id="btn-analyze">Detect Regions</button>
+        <button id="btn-re-cluster">Re-cluster</button>
+      </div>
+      <div class="status" id="analyze-status"></div>
+
+      <h3>Detected Colors</h3>
+      <div class="sampled-colors" id="sampled-colors"></div>
+    </div>
+
+    <div class="step" id="step4">
+      <h2><span class="step-indicator">4</span> Preview &amp; Fix</h2>
+      <p class="info">Click a color swatch to select a paint color, then click cells to fix misidentified regions.</p>
+      <div class="color-palette" id="color-palette"></div>
+      <div id="preview-container"></div>
+      <div id="validation"></div>
+    </div>
+
+    <div class="step" id="step5">
+      <h2><span class="step-indicator">5</span> Export</h2>
+      <div class="btn-row">
+        <label>Puzzle #: <input type="number" id="puzzle-number" value="" min="1" placeholder="e.g. 655"></label>
+        <span style="color:#888;font-size:0.85rem">or</span>
+        <label>Custom name: <input type="text" id="puzzle-name" value="" placeholder="Leave blank for official"></label>
+      </div>
+      <div class="btn-row">
+        <button class="primary" id="btn-export">Generate Config</button>
+        <button id="btn-copy">Copy to Clipboard</button>
+      </div>
+      <p class="info">Paste into the PUZZLES array in <strong>puzzles.js</strong> (add a comma after the previous entry).</p>
+      <div class="json-output" id="json-output"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let img = null;
+let imgCanvas, imgCtx, overlayCanvas, overlayCtx;
+let cornerTL = null;   // {x, y} in canvas coords
+let cornerBR = null;
+let cornerState = 'tl'; // 'tl' | 'br' | 'done'
+let gridSize = 8;
+let cellColors = [];    // [row][col] = {r,g,b}
+let regionMap = [];     // [row][col] = region index
+let regionColorMap = []; // region index -> display hex color
+let paintRegion = -1;   // currently selected paint region
+let scaleX = 1, scaleY = 1; // display scale factors
+
+const DISPLAY_COLORS = [
+  '#e8a87c','#85cdca','#d5a6e6','#f6c667','#82b7dc',
+  '#e88b8b','#a8d5a2','#f4a4c0','#c4b7a6','#9bc4e2',
+  '#d4e09b','#f0c9a0','#b8c9e8','#e8c8a0','#c4d5a6'
+];
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+  imgCanvas = document.getElementById('image-canvas');
+  imgCtx = imgCanvas.getContext('2d', {willReadFrequently: true});
+  overlayCanvas = document.getElementById('grid-overlay');
+  overlayCtx = overlayCanvas.getContext('2d');
+
+  // Drop zone
+  const dropZone = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('file-input');
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) loadImageFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length) loadImageFile(e.target.files[0]);
+  });
+
+  // Paste from clipboard
+  document.addEventListener('paste', (e) => {
+    const items = e.clipboardData.items;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        loadImageFile(item.getAsFile());
+        break;
+      }
+    }
+  });
+
+  // Canvas click for corners
+  imgCanvas.addEventListener('click', onCanvasClick);
+
+  // Buttons
+  document.getElementById('btn-reset-corners').addEventListener('click', resetCorners);
+  document.getElementById('btn-analyze').addEventListener('click', analyze);
+  document.getElementById('btn-re-cluster').addEventListener('click', () => {
+    if (cellColors.length) { clusterColors(); buildPreview(); }
+  });
+  document.getElementById('btn-export').addEventListener('click', exportJSON);
+  document.getElementById('btn-copy').addEventListener('click', copyJSON);
+
+  document.getElementById('grid-size').addEventListener('change', (e) => {
+    gridSize = parseInt(e.target.value) || 8;
+    if (cornerState === 'done') drawGridOverlay();
+  });
+}
+
+// ============================================================
+// IMAGE LOADING
+// ============================================================
+function loadImageFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    img = new Image();
+    img.onload = () => {
+      // Scale to fit max 600px display, but keep full resolution for sampling
+      const maxDisplay = 600;
+      const scale = Math.min(1, maxDisplay / img.width, maxDisplay / img.height);
+      const displayW = Math.round(img.width * scale);
+      const displayH = Math.round(img.height * scale);
+
+      imgCanvas.width = img.width;
+      imgCanvas.height = img.height;
+      imgCanvas.style.width = displayW + 'px';
+      imgCanvas.style.height = displayH + 'px';
+
+      overlayCanvas.width = img.width;
+      overlayCanvas.height = img.height;
+      overlayCanvas.style.width = displayW + 'px';
+      overlayCanvas.style.height = displayH + 'px';
+
+      scaleX = img.width / displayW;
+      scaleY = img.height / displayH;
+
+      imgCtx.drawImage(img, 0, 0);
+
+      // Default corners to full image bounds
+      cornerTL = {x: 0, y: 0};
+      cornerBR = {x: img.width, y: img.height};
+      cornerState = 'done';
+      document.getElementById('corner-status').textContent = 'Corners default to image bounds. Click to adjust, or go ahead and analyze.';
+      drawCornerMarkers();
+      drawGridOverlay();
+
+      document.getElementById('drop-zone').innerHTML = '<p>Image loaded! Click below to change.</p><input type="file" id="file-input" accept="image/*" style="display:none">';
+      document.getElementById('drop-zone').querySelector('input').addEventListener('change', (ev) => {
+        if (ev.target.files.length) loadImageFile(ev.target.files[0]);
+      });
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ============================================================
+// CORNER PICKING
+// ============================================================
+function onCanvasClick(e) {
+  if (!img) return;
+  const rect = imgCanvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) * scaleX;
+  const y = (e.clientY - rect.top) * scaleY;
+
+  // If already done, restart corner picking
+  if (cornerState === 'done') {
+    cornerState = 'tl';
+  }
+
+  if (cornerState === 'tl') {
+    cornerTL = {x, y};
+    cornerBR = null;
+    cornerState = 'br';
+    document.getElementById('corner-status').textContent = 'Now click the bottom-right corner...';
+    drawCornerMarkers();
+  } else if (cornerState === 'br') {
+    cornerBR = {x, y};
+    cornerState = 'done';
+    document.getElementById('corner-status').textContent = 'Corners set! Click "Detect Regions" to analyze.';
+    drawCornerMarkers();
+    drawGridOverlay();
+  }
+}
+
+function resetCorners() {
+  cornerTL = null;
+  cornerBR = null;
+  cornerState = 'tl';
+  document.getElementById('corner-status').textContent = 'Waiting for top-left corner click...';
+  clearOverlay();
+}
+
+function drawCornerMarkers() {
+  clearOverlay();
+
+  if (cornerTL) {
+    overlayCtx.beginPath();
+    overlayCtx.arc(cornerTL.x, cornerTL.y, 8, 0, Math.PI * 2);
+    overlayCtx.fillStyle = '#ff4444';
+    overlayCtx.fill();
+    overlayCtx.strokeStyle = '#fff';
+    overlayCtx.lineWidth = 2;
+    overlayCtx.stroke();
+  }
+
+  if (cornerBR) {
+    overlayCtx.beginPath();
+    overlayCtx.arc(cornerBR.x, cornerBR.y, 8, 0, Math.PI * 2);
+    overlayCtx.fillStyle = '#44ff44';
+    overlayCtx.fill();
+    overlayCtx.strokeStyle = '#fff';
+    overlayCtx.lineWidth = 2;
+    overlayCtx.stroke();
+  }
+}
+
+function clearOverlay() {
+  overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+}
+
+function drawGridOverlay() {
+  clearOverlay();
+  drawCornerMarkers();
+
+  if (!cornerTL || !cornerBR) return;
+
+  const n = gridSize;
+  const x0 = cornerTL.x, y0 = cornerTL.y;
+  const x1 = cornerBR.x, y1 = cornerBR.y;
+
+  overlayCtx.strokeStyle = 'rgba(255,255,255,0.5)';
+  overlayCtx.lineWidth = 1;
+
+  for (let i = 0; i <= n; i++) {
+    const x = x0 + (x1 - x0) * i / n;
+    const y = y0 + (y1 - y0) * i / n;
+
+    overlayCtx.beginPath();
+    overlayCtx.moveTo(x, y0);
+    overlayCtx.lineTo(x, y1);
+    overlayCtx.stroke();
+
+    overlayCtx.beginPath();
+    overlayCtx.moveTo(x0, y);
+    overlayCtx.lineTo(x1, y);
+    overlayCtx.stroke();
+  }
+
+  // Draw corner sample points (where we actually sample color)
+  const insetFrac = 0.2;
+  const cornerOffsets = [
+    [insetFrac, insetFrac], [1 - insetFrac, insetFrac],
+    [insetFrac, 1 - insetFrac], [1 - insetFrac, 1 - insetFrac]
+  ];
+  overlayCtx.fillStyle = 'rgba(255,255,0,0.7)';
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      const cellX = x0 + (x1 - x0) * c / n;
+      const cellY = y0 + (y1 - y0) * r / n;
+      const cw = (x1 - x0) / n;
+      const ch = (y1 - y0) / n;
+      for (const [fx, fy] of cornerOffsets) {
+        overlayCtx.beginPath();
+        overlayCtx.arc(cellX + cw * fx, cellY + ch * fy, 2, 0, Math.PI * 2);
+        overlayCtx.fill();
+      }
+    }
+  }
+}
+
+// ============================================================
+// COLOR SAMPLING
+// ============================================================
+function analyze() {
+  if (!img || cornerState !== 'done') {
+    document.getElementById('analyze-status').textContent = 'Please load an image and set both corners first.';
+    return;
+  }
+
+  gridSize = parseInt(document.getElementById('grid-size').value) || 8;
+  sampleColors();
+  clusterColors();
+  buildPreview();
+
+  document.getElementById('analyze-status').textContent =
+    `Sampled ${gridSize}x${gridSize} cells, detected ${gridSize} regions.`;
+}
+
+function sampleColors() {
+  const n = gridSize;
+  const x0 = cornerTL.x, y0 = cornerTL.y;
+  const x1 = cornerBR.x, y1 = cornerBR.y;
+  const cellW = (x1 - x0) / n;
+  const cellH = (y1 - y0) / n;
+
+  cellColors = [];
+
+  // Read entire image into memory once (avoids slow per-pixel getImageData calls)
+  const imgW = img.width, imgH = img.height;
+  const imgData = imgCtx.getImageData(0, 0, imgW, imgH).data;
+
+  // Sample from the corners/edges of each cell to avoid icons in the center.
+  // We sample small patches at 4 corners of the cell (inset by 15-20% from edges)
+  // and take the median color, which is robust against outlier icon pixels.
+  const insetFrac = 0.2; // how far from cell edge (fraction of cell size)
+  const patchR = Math.max(1, Math.floor(Math.min(cellW, cellH) * 0.06));
+
+  for (let r = 0; r < n; r++) {
+    cellColors[r] = [];
+    for (let c = 0; c < n; c++) {
+      const cellX = x0 + cellW * c;
+      const cellY = y0 + cellH * r;
+
+      // 4 corner sample points (inset from edges)
+      const offsets = [
+        [insetFrac, insetFrac],           // top-left
+        [1 - insetFrac, insetFrac],       // top-right
+        [insetFrac, 1 - insetFrac],       // bottom-left
+        [1 - insetFrac, 1 - insetFrac],   // bottom-right
+      ];
+
+      const samples = [];
+      for (const [fx, fy] of offsets) {
+        const sx = Math.round(cellX + cellW * fx);
+        const sy = Math.round(cellY + cellH * fy);
+
+        let tr = 0, tg = 0, tb = 0, cnt = 0;
+        for (let dy = -patchR; dy <= patchR; dy++) {
+          for (let dx = -patchR; dx <= patchR; dx++) {
+            const px = sx + dx, py = sy + dy;
+            if (px >= 0 && px < imgW && py >= 0 && py < imgH) {
+              const i = (py * imgW + px) * 4;
+              tr += imgData[i]; tg += imgData[i+1]; tb += imgData[i+2]; cnt++;
+            }
+          }
+        }
+        if (cnt > 0) {
+          samples.push({r: tr/cnt, g: tg/cnt, b: tb/cnt});
+        }
+      }
+
+      // Use median of corner samples (robust against 1-2 corners hit by icons/borders)
+      // Sort by brightness and pick the two middle values, then average them
+      samples.sort((a, b) => (a.r + a.g + a.b) - (b.r + b.g + b.b));
+      const mid = Math.floor(samples.length / 2);
+      // Average the middle two samples for robustness
+      const s1 = samples[Math.max(0, mid - 1)];
+      const s2 = samples[Math.min(samples.length - 1, mid)];
+
+      cellColors[r][c] = {
+        r: Math.round((s1.r + s2.r) / 2),
+        g: Math.round((s1.g + s2.g) / 2),
+        b: Math.round((s1.b + s2.b) / 2)
+      };
+    }
+  }
+
+  // Show sampled colors
+  const container = document.getElementById('sampled-colors');
+  container.innerHTML = '';
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      const col = cellColors[r][c];
+      const dot = document.createElement('div');
+      dot.className = 'sampled-dot';
+      dot.style.backgroundColor = `rgb(${col.r},${col.g},${col.b})`;
+      dot.title = `(${r},${c}): rgb(${col.r},${col.g},${col.b})`;
+      container.appendChild(dot);
+    }
+  }
+}
+
+// ============================================================
+// COLOR CLUSTERING (K-MEANS)
+// ============================================================
+function clusterColors() {
+  const n = gridSize;
+
+  // Flatten colors for clustering
+  const pixels = [];
+  for (let r = 0; r < n; r++)
+    for (let c = 0; c < n; c++)
+      pixels.push(cellColors[r][c]);
+
+  // K-means with k = n
+  const k = n;
+  const labels = kMeans(pixels, k);
+
+  // Build region map
+  regionMap = [];
+  let idx = 0;
+  for (let r = 0; r < n; r++) {
+    regionMap[r] = [];
+    for (let c = 0; c < n; c++) {
+      regionMap[r][c] = labels[idx++];
+    }
+  }
+
+  // Compute average color per region for display
+  regionColorMap = [];
+  for (let i = 0; i < k; i++) {
+    let tr = 0, tg = 0, tb = 0, cnt = 0;
+    for (let r = 0; r < n; r++)
+      for (let c = 0; c < n; c++)
+        if (regionMap[r][c] === i) {
+          tr += cellColors[r][c].r;
+          tg += cellColors[r][c].g;
+          tb += cellColors[r][c].b;
+          cnt++;
+        }
+    if (cnt > 0) {
+      regionColorMap[i] = rgbToHex(Math.round(tr/cnt), Math.round(tg/cnt), Math.round(tb/cnt));
+    } else {
+      regionColorMap[i] = DISPLAY_COLORS[i % DISPLAY_COLORS.length];
+    }
+  }
+
+  // Normalize region indices: renumber so that region 0 appears first
+  // reading left-to-right, top-to-bottom
+  const remap = {};
+  let nextId = 0;
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      const old = regionMap[r][c];
+      if (!(old in remap)) {
+        remap[old] = nextId++;
+      }
+      regionMap[r][c] = remap[old];
+    }
+  }
+
+  // Also remap the color map
+  const newColorMap = [];
+  for (const [old, newIdx] of Object.entries(remap)) {
+    newColorMap[newIdx] = regionColorMap[+old];
+  }
+  regionColorMap = newColorMap;
+}
+
+function kMeans(pixels, k, maxIter = 30) {
+  const n = pixels.length;
+  if (n === 0) return [];
+
+  // Initialize centroids using k-means++ style
+  const centroids = [];
+  const used = new Set();
+
+  // Pick first centroid randomly
+  centroids.push({...pixels[0]});
+  used.add(0);
+
+  for (let i = 1; i < k; i++) {
+    // Find pixel furthest from nearest centroid
+    let bestDist = -1, bestIdx = 0;
+    for (let j = 0; j < n; j++) {
+      if (used.has(j)) continue;
+      let minD = Infinity;
+      for (const c of centroids) {
+        const d = colorDist(pixels[j], c);
+        if (d < minD) minD = d;
+      }
+      if (minD > bestDist) {
+        bestDist = minD;
+        bestIdx = j;
+      }
+    }
+    centroids.push({...pixels[bestIdx]});
+    used.add(bestIdx);
+  }
+
+  // Iterate
+  let labels = new Array(n).fill(0);
+
+  for (let iter = 0; iter < maxIter; iter++) {
+    // Assign
+    let changed = false;
+    for (let j = 0; j < n; j++) {
+      let minD = Infinity, minK = 0;
+      for (let ki = 0; ki < k; ki++) {
+        const d = colorDist(pixels[j], centroids[ki]);
+        if (d < minD) { minD = d; minK = ki; }
+      }
+      if (labels[j] !== minK) { labels[j] = minK; changed = true; }
+    }
+
+    if (!changed) break;
+
+    // Update centroids
+    for (let ki = 0; ki < k; ki++) {
+      let tr = 0, tg = 0, tb = 0, cnt = 0;
+      for (let j = 0; j < n; j++) {
+        if (labels[j] === ki) {
+          tr += pixels[j].r;
+          tg += pixels[j].g;
+          tb += pixels[j].b;
+          cnt++;
+        }
+      }
+      if (cnt > 0) {
+        centroids[ki] = {r: tr/cnt, g: tg/cnt, b: tb/cnt};
+      }
+    }
+  }
+
+  return labels;
+}
+
+function colorDist(a, b) {
+  // Weighted Euclidean — human eye is more sensitive to green
+  const dr = a.r - b.r, dg = a.g - b.g, db = a.b - b.b;
+  return dr*dr*2 + dg*dg*4 + db*db*3;
+}
+
+function rgbToHex(r, g, b) {
+  return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
+}
+
+// ============================================================
+// PREVIEW GRID
+// ============================================================
+function buildPreview() {
+  const n = gridSize;
+  const container = document.getElementById('preview-container');
+  container.innerHTML = '';
+
+  const grid = document.createElement('div');
+  grid.className = 'preview-grid';
+  grid.style.gridTemplateColumns = `repeat(${n}, 40px)`;
+
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'preview-cell';
+      cell.dataset.row = r;
+      cell.dataset.col = c;
+      updatePreviewCell(cell, r, c);
+
+      cell.addEventListener('click', () => {
+        if (paintRegion >= 0 && paintRegion < n) {
+          regionMap[r][c] = paintRegion;
+          updatePreviewCell(cell, r, c);
+          updateAllBorders();
+          validate();
+        }
+      });
+
+      grid.appendChild(cell);
+    }
+  }
+
+  container.appendChild(grid);
+  updateAllBorders();
+  buildPalette();
+  validate();
+}
+
+function updatePreviewCell(cell, r, c) {
+  const region = regionMap[r][c];
+  cell.style.backgroundColor = regionColorMap[region] || DISPLAY_COLORS[region % DISPLAY_COLORS.length];
+  cell.textContent = region;
+}
+
+function updateAllBorders() {
+  const n = gridSize;
+  const cells = document.querySelectorAll('.preview-cell');
+  cells.forEach(cell => {
+    const r = +cell.dataset.row, c = +cell.dataset.col;
+    const reg = regionMap[r][c];
+    cell.classList.toggle('border-top', r === 0 || regionMap[r-1][c] !== reg);
+    cell.classList.toggle('border-bottom', r === n-1 || regionMap[r+1][c] !== reg);
+    cell.classList.toggle('border-left', c === 0 || regionMap[r][c-1] !== reg);
+    cell.classList.toggle('border-right', c === n-1 || regionMap[r][c+1] !== reg);
+  });
+}
+
+function buildPalette() {
+  const n = gridSize;
+  const container = document.getElementById('color-palette');
+  container.innerHTML = '';
+
+  for (let i = 0; i < n; i++) {
+    const swatch = document.createElement('div');
+    swatch.className = 'color-swatch';
+    swatch.style.backgroundColor = regionColorMap[i] || DISPLAY_COLORS[i % DISPLAY_COLORS.length];
+    swatch.textContent = i;
+    swatch.addEventListener('click', () => {
+      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+      swatch.classList.add('active');
+      paintRegion = i;
+    });
+    container.appendChild(swatch);
+  }
+}
+
+// ============================================================
+// VALIDATION
+// ============================================================
+function validate() {
+  const n = gridSize;
+  const el = document.getElementById('validation');
+  const issues = [];
+
+  // Check we have exactly n regions
+  const regionSeen = new Set();
+  for (let r = 0; r < n; r++)
+    for (let c = 0; c < n; c++)
+      regionSeen.add(regionMap[r][c]);
+
+  if (regionSeen.size !== n) {
+    issues.push(`Found ${regionSeen.size} regions, expected ${n}`);
+  }
+
+  // Check each region is contiguous
+  const regionCells = {};
+  for (let r = 0; r < n; r++)
+    for (let c = 0; c < n; c++) {
+      const reg = regionMap[r][c];
+      if (!regionCells[reg]) regionCells[reg] = [];
+      regionCells[reg].push([r, c]);
+    }
+
+  for (const [reg, cells] of Object.entries(regionCells)) {
+    const cellSet = new Set(cells.map(([r,c]) => r+','+c));
+    const visited = new Set();
+    const queue = [cells[0]];
+    visited.add(cells[0][0]+','+cells[0][1]);
+
+    while (queue.length) {
+      const [cr, cc] = queue.pop();
+      for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+        const key = (cr+dr)+','+(cc+dc);
+        if (cellSet.has(key) && !visited.has(key)) {
+          visited.add(key);
+          queue.push([cr+dr, cc+dc]);
+        }
+      }
+    }
+
+    if (visited.size !== cells.length) {
+      issues.push(`Region ${reg} is not contiguous (${visited.size}/${cells.length} connected)`);
+    }
+  }
+
+  if (issues.length === 0) {
+    el.className = 'validation pass';
+    el.textContent = 'Valid: ' + n + ' contiguous regions detected.';
+  } else {
+    el.className = 'validation fail';
+    el.innerHTML = 'Issues:<br>' + issues.join('<br>');
+  }
+}
+
+// ============================================================
+// EXPORT
+// ============================================================
+function exportJSON() {
+  const n = gridSize;
+  const num = document.getElementById('puzzle-number').value;
+  const name = document.getElementById('puzzle-name').value;
+
+  const regionLines = regionMap.map(row => '      [' + row.join(',') + ']');
+
+  let identLine;
+  if (num) {
+    identLine = `    number: ${parseInt(num)},`;
+  } else if (name) {
+    identLine = `    name: "${name.replace(/"/g, '\\"')}",`;
+  } else {
+    identLine = `    name: "Unnamed Puzzle",`;
+  }
+
+  const js =
+`  {
+${identLine}
+    size: ${n},
+    regions: [
+${regionLines.join(',\n')}
+    ]
+  },`;
+
+  document.getElementById('json-output').textContent = js;
+  navigator.clipboard.writeText(js).then(() => {
+    const btn = document.getElementById('btn-export');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = orig, 1500);
+  });
+}
+
+function copyJSON() {
+  const text = document.getElementById('json-output').textContent;
+  if (!text) { exportJSON(); }
+  navigator.clipboard.writeText(document.getElementById('json-output').textContent).then(() => {
+    const btn = document.getElementById('btn-copy');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy to Clipboard', 1500);
+  });
+}
+
+// ============================================================
+// START
+// ============================================================
+init();
+</script>
+
+</body>
+</html>

@@ -831,7 +831,7 @@ function stopTimer() {
 }
 
 function resetBoard() {
-  loadPuzzle(puzzle);
+  loadPuzzle(originalPuzzle);
 }
 
 function updateTimerDisplay() {

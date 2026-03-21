@@ -137,12 +137,12 @@
   }
 
   .cell {
-    width: 60px;
-    height: 60px;
+    width: var(--cell-size, 60px);
+    height: var(--cell-size, 60px);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.6rem;
+    font-size: calc(var(--cell-size, 60px) * 0.45);
     cursor: pointer;
     position: relative;
     transition: filter 0.1s;
@@ -152,14 +152,14 @@
   .cell:hover { filter: brightness(1.1); }
 
   .cell .x-mark {
-    font-size: 1.2rem;
+    font-size: calc(var(--cell-size, 60px) * 0.35);
     font-weight: bold;
     color: rgba(0,0,0,0.55);
     pointer-events: none;
   }
 
   .cell .queen-mark {
-    font-size: 1.8rem;
+    font-size: calc(var(--cell-size, 60px) * 0.5);
     color: rgba(0,0,0,0.55);
     pointer-events: none;
   }
@@ -267,9 +267,6 @@
   }
 
   @media (max-width: 600px) {
-    .cell { width: 42px; height: 42px; font-size: 1.2rem; }
-    .cell .queen-mark { font-size: 1.3rem; }
-    .cell .x-mark { font-size: 0.9rem; }
     h1 { font-size: 1.4rem; }
     .queen-token { width: 26px; height: 26px; font-size: 0.9rem; }
   }
@@ -584,7 +581,15 @@ function loadPuzzle(p) {
 // ============================================================
 // BOARD RENDERING
 // ============================================================
+function updateCellSize() {
+  const padding = 40; // body has 20px padding each side
+  const available = window.innerWidth - padding;
+  const cellSize = Math.min(60, Math.floor(available / size));
+  document.documentElement.style.setProperty('--cell-size', cellSize + 'px');
+}
+
 function buildBoard() {
+  updateCellSize();
   const board = document.getElementById('board');
   board.innerHTML = '';
   board.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
@@ -875,8 +880,15 @@ function updateProgress() {
 // ============================================================
 // START
 // ============================================================
+window.addEventListener('resize', () => { if (size) updateCellSize(); });
 init();
 </script>
+
+<div style="text-align:center; margin-top: 3em; color: #888; font-size: 0.85em;">
+  vibecoded by <a href="https://mccorvie.org" style="color:#888;">Ryan McCorvie</a>
+  &nbsp;|&nbsp;
+  <a href="https://github.com/mccorvie/queens-game" style="color:#888;">github</a>
+</div>
 
 </body>
 </html>
